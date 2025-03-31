@@ -1,0 +1,22 @@
+# DiscoPilot Example Configuration
+# Copy this file to config.yaml and update with your values
+
+discord:
+  token: "YOUR_DISCORD_TOKEN"
+
+# Admin users who can trigger publishing
+admin_ids:
+  - 123456789012345678  # Your Discord user ID
+
+# Trigger configuration
+triggers:
+  emoji: "📢"  # The emoji that triggers publishing
+
+# Twitter configuration
+twitter:
+  api_key: "YOUR_TWITTER_API_KEY"
+  api_secret: "YOUR_TWITTER_API_SECRET"
+  access_token: "YOUR_TWITTER_ACCESS_TOKEN"
+  access_secret: "YOUR_TWITTER_ACCESS_SECRET"
+  bearer_token: "YOUR_TWITTER_BEARER_TOKEN"
+# Add other platform configurations as needed

@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "discopilot"
+version = "0.1.0"
+description = "A Discord bot that monitors channels and publishes content to social media"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Tengfei Yin", email = "tengfei@twinko.ai"},
+]
+keywords = ["discord", "bot", "twitter", "social media"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "discord.py>=2.0.0",
+    "tweepy>=4.0.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=0.19.0",
+    # Add other dependencies as needed for different publishers
+]
+
+[project.scripts]
+discopilot = "discopilot.scripts.run_bot:main"
+discopilot-setup = "discopilot.scripts.setup_cmd:main"
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/discopilot"
+"Bug Tracker" = "https://github.com/yourusername/discopilot/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["discopilot"]
