@@ -13,9 +13,17 @@ class Config:
             cls._instance._load_config()
         return cls._instance
     
-    def _load_config(self):
+    def __init__(self, config_path=None):
+        self.config = {}
+        self._load_config(config_path)
+        self._process_config()
+
+    def _load_config(self, config_path=None):
         # First try user-specified config path
-        config_path = os.environ.get("DISCOPILOT_CONFIG")
+        if config_path:
+            config_path = config_path
+        else:
+            config_path = os.environ.get("DISCOPILOT_CONFIG")
         
         # If not specified, look in standard locations
         if not config_path or not os.path.exists(config_path):
@@ -49,4 +57,39 @@ class Config:
         
         # Reaction configuration
         self.trigger_emoji = os.environ.get("TRIGGER_EMOJI", self.config.get("triggers", {}).get("emoji", "📢"))
-        self.admin_ids = [int(id) for id in os.environ.get("ADMIN_IDS", "").split(",") if id] or self.config.get("admin_ids", []) 
+        self.admin_ids = [int(id) for id in os.environ.get("ADMIN_IDS", "").split(",") if id] or self.config.get("admin_ids", [])
+
+    def _process_config(self):
+        """Process the loaded configuration and set attributes."""
+        # Discord configuration
+        discord_config = self.config.get("discord", {})
+        self.discord_token = discord_config.get("token")
+        self.server_ids = discord_config.get("server_ids", [])
+        
+        # Admin IDs
+        self.admin_ids = self.config.get("admin_ids", [])
+        
+        # Trigger configuration
+        triggers_config = self.config.get("triggers", {})
+        self.trigger_emoji = triggers_config.get("emoji", "📢")
+        
+        # Twitter configuration
+        twitter_config = self.config.get("twitter", {})
+        self.twitter_api_key = twitter_config.get("api_key")
+        self.twitter_api_secret = twitter_config.get("api_secret")
+        self.twitter_access_token = twitter_config.get("access_token")
+        self.twitter_access_secret = twitter_config.get("access_secret")
+        self.twitter_bearer_token = twitter_config.get("bearer_token")
+        
+        # New OAuth 2.0 credentials
+        self.twitter_client_id = twitter_config.get("client_id")
+        self.twitter_client_secret = twitter_config.get("client_secret")
+        self.twitter_oauth2_refresh_token = twitter_config.get("oauth2_refresh_token")
+        self.twitter_oauth2_access_token = twitter_config.get("oauth2_access_token")
+        
+        # ... other configurations ...
+
+    @property
+    def is_server_restricted(self):
+        """Check if the bot is restricted to specific servers."""
+        return len(self.server_ids) > 0 

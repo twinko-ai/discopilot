@@ -11,61 +11,52 @@ class HedwigBot(commands.Bot):
     Discord bot that monitors channels and publishes content to social media
     """
     
-    def __init__(self):
+    def __init__(self, config, publishers):
+        """Initialize the Discord client."""
         intents = discord.Intents.default()
         intents.message_content = True
         intents.reactions = True
         
         super().__init__(command_prefix="!", intents=intents)
         
-        self.config = Config()
-        self.logger = logging.getLogger("discopilot.bot")
-        
-        # Initialize publishers
-        self.publishers = {}
-        self.setup_publishers()
-        
-        # Register event handlers
-        self.add_listener(self.on_ready, "on_ready")
-        self.add_listener(self.on_raw_reaction_add, "on_raw_reaction_add")
-    
-    def setup_publishers(self):
-        """Initialize all configured publishers"""
-        # Twitter
-        if hasattr(self.config, "twitter_api_key") and self.config.twitter_api_key:
-            self.publishers["twitter"] = TwitterPublisher(self.config)
-            self.logger.info("Twitter publisher initialized")
-        
-        # Add other publishers as needed
+        self.config = config
+        self.publishers = publishers
+        self.logger = logging.getLogger("discopilot")
     
     async def on_ready(self):
-        """Called when the bot is ready"""
+        """Called when the client is done preparing the data received from Discord."""
         self.logger.info(f"Logged in as {self.user.name} ({self.user.id})")
-        self.logger.info(f"Monitoring for emoji: {self.config.trigger_emoji}")
-        self.logger.info(f"Admin IDs: {self.config.admin_ids}")
+        
+        # Set up activity
+        activity = discord.Activity(type=discord.ActivityType.watching, name="for 📢 reactions")
+        await self.change_presence(activity=activity)
     
     async def on_raw_reaction_add(self, payload):
-        """Called when a reaction is added to a message"""
-        # Check if the reaction is the trigger emoji and from an admin
-        if (str(payload.emoji) == self.config.trigger_emoji and 
-                payload.user_id in self.config.admin_ids):
+        """Called when a reaction is added to a message."""
+        # Check if the reaction is the trigger emoji
+        if str(payload.emoji) != self.config.trigger_emoji:
+            return
+        
+        # Get the channel and message
+        channel = self.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        
+        # Check if user is an admin
+        if payload.user_id in self.config.admin_ids:
+            self.logger.info(f"Admin {payload.user_id} triggered publishing for message {payload.message_id}")
             
-            self.logger.info(f"Trigger emoji detected from admin {payload.user_id}")
-            
-            # Get the channel and message
-            channel = self.get_channel(payload.channel_id)
-            if not channel:
-                self.logger.error(f"Could not find channel {payload.channel_id}")
-                return
-            
-            try:
-                message = await channel.fetch_message(payload.message_id)
-            except discord.NotFound:
-                self.logger.error(f"Could not find message {payload.message_id}")
-                return
-            
-            # Process the message for publishing
-            await self.publish_message(message)
+            # Publish the message to all configured platforms
+            for name, publisher in self.publishers.items():
+                # Pass the entire Discord message object to the publisher
+                result = await publisher.publish(message)
+                
+                # Log the result
+                if result["success"]:
+                    self.logger.info(f"Published to {name}: {result.get('id', 'N/A')}")
+                else:
+                    self.logger.error(f"Failed to publish to {name}: {result.get('error', 'Unknown error')}")
+        else:
+            self.logger.info(f"Non-admin user {payload.user_id} attempted to trigger publishing")
     
     async def publish_message(self, message):
         """Publish a message to all configured platforms"""
@@ -103,3 +94,7 @@ class HedwigBot(commands.Bot):
                 summary += f"❌ {platform.capitalize()}: {result.get('error', 'Unknown error')}\n"
         
         await message.reply(summary)
+
+    async def on_message(self, message):
+        if message.content == '!ping':
+            await message.channel.send('Pong!')

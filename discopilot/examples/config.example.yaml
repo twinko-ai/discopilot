@@ -1,0 +1,27 @@
+# DiscoPilot Configuration
+
+discord:
+  token: "YOUR_DISCORD_TOKEN"
+  server_ids:
+    - 1138477795526311957  # Your Discord server ID
+
+admin_ids:
+  - YOUR_DISCORD_USER_ID  # Your Discord user ID
+
+triggers:
+  emoji: "📢"  # The emoji that triggers publishing
+
+twitter:
+  # OAuth 1.0a credentials (traditional)
+  api_key: "YOUR_TWITTER_API_KEY"
+  api_secret: "YOUR_TWITTER_API_SECRET"
+  access_token: "YOUR_TWITTER_ACCESS_TOKEN"
+  access_secret: "YOUR_TWITTER_ACCESS_SECRET"
+  
+  # OAuth 2.0 credentials (new)
+  client_id: "YOUR_OAUTH2_CLIENT_ID"
+  client_secret: "YOUR_OAUTH2_CLIENT_SECRET"
+  
+  # Optional: If you've completed OAuth 2.0 flow and have these tokens
+  oauth2_refresh_token: ""  # Leave empty for now
+  oauth2_access_token: ""   # Leave empty for now
