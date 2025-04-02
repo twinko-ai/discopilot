@@ -39,6 +39,7 @@ discopilot-setup = "discopilot.scripts.setup_cmd:main"
 [project.urls]
 "Homepage" = "https://github.com/twinko-ai/discopilot"
 "Bug Tracker" = "https://github.com/twinko-ai/discopilot/issues"
+"License" = "https://www.apache.org/licenses/LICENSE-2.0"
 
 [tool.hatch.build.targets.wheel]
 packages = ["discopilot"]

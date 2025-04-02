@@ -158,4 +158,40 @@ pytest --cov=discopilot
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Deployment
+
+### AWS Lightsail Deployment
+
+To deploy DiscoPilot on AWS Lightsail:
+
+1. Go to the [AWS Lightsail console](https://lightsail.aws.amazon.com/)
+2. Click "Create instance"
+3. Choose a location (AWS Region) close to you
+4. Select "Linux/Unix" platform
+5. Choose "Ubuntu 24.04 LTS" as the blueprint
+6. Select the $3.50/month plan (1 vCPU, 512MB RAM)
+7. Name your instance (e.g., "discopilot")
+8. Click "Add launch script" and paste the content of `scripts/deployment/lightsail_launch.sh`
+9. Click "Create instance"
+
+After the instance is created:
+
+1. Connect to your instance via SSH
+2. Update the configuration file:
+   ```bash
+   sudo nano /home/botuser/.config/discopilot/config.yaml
+   ```
+3. Start the service:
+   ```bash
+   sudo systemctl start discopilot
+   ```
+
+### Maintenance Commands
+
+The following commands are available after deployment:
+
+- `update-bot`: Pull the latest code from GitHub and restart the bot
+- `restart-bot`: Restart the bot without updating
+- `bot-logs`: View the bot's logs in real-time
+
 
