@@ -1,5 +1,11 @@
 # discopilot
 
+[![CI](https://github.com/twinko-ai/discopilot/actions/workflows/ci.yml/badge.svg)](https://github.com/twinko-ai/discopilot/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/twinko-ai/discopilot/branch/main/graph/badge.svg)](https://codecov.io/gh/twinko-ai/discopilot)
+[![PyPI version](https://badge.fury.io/py/discopilot.svg)](https://badge.fury.io/py/discopilot)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+
 A Discord bot that monitors channels and publishes content to social media platforms.
 
 ## Features
@@ -20,7 +26,7 @@ pip install discopilot
 ### From Source
 
 ```
-git clone https://github.com/yourusername/discopilot.git
+git clone https://github.com/twinko-ai/discopilot.git
 cd discopilot
 uv venv .venv
 source .venv/bin/activate
@@ -156,7 +162,7 @@ pytest --cov=discopilot
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Apache 2.0 License - see the LICENSE file for details.
 
 ## Deployment
 

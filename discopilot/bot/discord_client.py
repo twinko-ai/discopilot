@@ -1,100 +1,133 @@
-import discord
-from discord.ext import commands
 import logging
-import asyncio
-from ..utils.config import Config
-from ..publishers.twitter_publisher import TwitterPublisher
-# Import other publishers as needed
+from typing import Dict, List, Optional
 
-class HedwigBot(commands.Bot):
-    """
-    Discord bot that monitors channels and publishes content to social media
-    """
-    
-    def __init__(self, config, publishers):
+import discord
+
+from ..publishers.base_publisher import BasePublisher
+
+logger = logging.getLogger(__name__)
+
+
+class DiscordClient(discord.Client):
+    """Discord client for the DiscoPilot bot."""
+
+    def __init__(
+        self,
+        token: str,
+        server_ids: Optional[List[int]] = None,
+        admin_ids: Optional[List[int]] = None,
+        trigger_emoji: str = "📢",
+        *args,
+        **kwargs,
+    ):
         """Initialize the Discord client."""
         intents = discord.Intents.default()
         intents.message_content = True
         intents.reactions = True
-        
-        super().__init__(command_prefix="!", intents=intents)
-        
-        self.config = config
-        self.publishers = publishers
-        self.logger = logging.getLogger("discopilot")
-    
-    async def on_ready(self):
-        """Called when the client is done preparing the data received from Discord."""
-        self.logger.info(f"Logged in as {self.user.name} ({self.user.id})")
-        
-        # Set up activity
-        activity = discord.Activity(type=discord.ActivityType.watching, name="for 📢 reactions")
-        await self.change_presence(activity=activity)
-    
-    async def on_raw_reaction_add(self, payload):
-        """Called when a reaction is added to a message."""
-        # Check if the reaction is the trigger emoji
-        if str(payload.emoji) != self.config.trigger_emoji:
-            return
-        
-        # Get the channel and message
-        channel = self.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        
-        # Check if user is an admin
-        if payload.user_id in self.config.admin_ids:
-            self.logger.info(f"Admin {payload.user_id} triggered publishing for message {payload.message_id}")
-            
-            # Publish the message to all configured platforms
-            for name, publisher in self.publishers.items():
-                # Pass the entire Discord message object to the publisher
-                result = await publisher.publish(message)
-                
-                # Log the result
-                if result["success"]:
-                    self.logger.info(f"Published to {name}: {result.get('id', 'N/A')}")
-                else:
-                    self.logger.error(f"Failed to publish to {name}: {result.get('error', 'Unknown error')}")
-        else:
-            self.logger.info(f"Non-admin user {payload.user_id} attempted to trigger publishing")
-    
-    async def publish_message(self, message):
-        """Publish a message to all configured platforms"""
-        content = message.content
-        
-        # Extract media attachments
-        media = []
-        for attachment in message.attachments:
-            media.append(attachment.url)
-        
-        # Publish to each platform
-        results = {}
-        for platform, publisher in self.publishers.items():
-            if await publisher.check_rate_limit():
-                result = await publisher.publish(content, media)
-                results[platform] = result
-                
-                if result["success"]:
-                    self.logger.info(f"Published to {platform}: {result.get('url', 'N/A')}")
-                else:
-                    self.logger.error(f"Failed to publish to {platform}: {result.get('error', 'Unknown error')}")
-            else:
-                self.logger.warning(f"Rate limit exceeded for {platform}")
-                results[platform] = {"success": False, "error": "Rate limit exceeded"}
-        
-        # Add a confirmation reaction to the message
-        await message.add_reaction("✅")
-        
-        # Send a summary as a reply
-        summary = "**Publication Results:**\n"
-        for platform, result in results.items():
-            if result["success"]:
-                summary += f"✅ {platform.capitalize()}: [View]({result.get('url', 'N/A')})\n"
-            else:
-                summary += f"❌ {platform.capitalize()}: {result.get('error', 'Unknown error')}\n"
-        
-        await message.reply(summary)
+        super().__init__(intents=intents, *args, **kwargs)
 
-    async def on_message(self, message):
-        if message.content == '!ping':
-            await message.channel.send('Pong!')
+        self.token = token
+        self.server_ids = server_ids or []
+        self.admin_ids = admin_ids or []
+        self.trigger_emoji = trigger_emoji
+        self.publishers: Dict[str, BasePublisher] = {}
+
+        logger.info(f"Initialized Discord client with trigger emoji: {trigger_emoji}")
+        if server_ids:
+            logger.info(f"Listening to server IDs: {', '.join(map(str, server_ids))}")
+        else:
+            logger.info("Listening to all servers")
+
+        if admin_ids:
+            logger.info(f"Admin IDs: {', '.join(map(str, admin_ids))}")
+        else:
+            logger.warning("No admin IDs configured - anyone can trigger publishing")
+
+    async def on_ready(self):
+        """Handle the bot being ready."""
+        logger.info(f"Logged in as {self.user.name} ({self.user.id})")
+
+    async def on_reaction_add(self, reaction, user):
+        """Handle reaction added to a message."""
+        # Ignore bot's own reactions
+        if user.id == self.user.id:
+            return
+
+        # Check if reaction is the trigger emoji
+        emoji = str(reaction.emoji)
+        if emoji != self.trigger_emoji:
+            return
+
+        # Check if user is an admin (if admin list is configured)
+        if self.admin_ids and user.id not in self.admin_ids:
+            logger.warning(
+                f"User {user.name} ({user.id}) tried to publish but is not an admin"
+            )
+            return
+
+        message = reaction.message
+        logger.info(
+            f"Reaction added by {user.name} ({user.id}) to message {message.id} "
+            f"with emoji {emoji}"
+        )
+
+        # Check if message is in a server we're listening to
+        if (
+            self.server_ids
+            and message.guild
+            and message.guild.id not in self.server_ids
+        ):
+            logger.warning(
+                f"Message {message.id} is in server {message.guild.id} "
+                f"which is not in the allowed list"
+            )
+            return
+
+        await self.publish_message(message)
+
+    async def publish_message(self, message):
+        """Publish a message to all configured platforms."""
+        if not self.publishers:
+            logger.warning("No publishers configured")
+            await message.reply(
+                "No publishing platforms configured.", mention_author=False
+            )
+            return
+
+        logger.info(
+            f"Publishing message {message.id} from {message.author.name} "
+            f"to {len(self.publishers)} platforms"
+        )
+
+        results = []
+        for name, publisher in self.publishers.items():
+            try:
+                status, url = await publisher.publish(message)
+                logger.info(
+                    f"Message {message.id} published to {name} with status {status} "
+                    f"and URL {url}"
+                )
+                results.append((name, status, url))
+            except Exception as e:
+                logger.error(f"Error publishing to {name}: {e}", exc_info=True)
+                results.append((name, f"Error: {str(e)}", None))
+
+        # Reply with results
+        reply = "Publishing results:\n"
+        for publisher_name, status, url in results:
+            reply += f"- {publisher_name}: {status}"
+            if url:
+                reply += f" - {url}"
+            reply += "\n"
+
+        await message.reply(reply, mention_author=False)
+
+    def add_publisher(self, name: str, publisher: BasePublisher):
+        """Add a publisher to the client."""
+        self.publishers[name] = publisher
+        logger.info(f"Added publisher: {name}")
+
+    def run_bot(self):
+        """Run the bot."""
+        logger.info("Starting bot...")
+        self.run(self.token)

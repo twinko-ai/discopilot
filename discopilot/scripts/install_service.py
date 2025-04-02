@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import os
+import subprocess
 import sys
-import argparse
-import getpass
-import platform
+
 
 def create_systemd_service(username, working_dir):
     """Create a systemd service file for Linux"""
@@ -25,6 +24,7 @@ SyslogIdentifier=discopilot
 WantedBy=multi-user.target
 """
     return service_content
+
 
 def create_launchd_plist(username, working_dir):
     """Create a launchd plist file for macOS"""
@@ -55,48 +55,111 @@ def create_launchd_plist(username, working_dir):
 """
     return plist_content
 
+
+def install_service():
+    """Install the DiscoPilot service."""
+    # Get the current Python executable
+    python_path = sys.executable
+
+    # Get the package directory
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    # Create service file content
+    service_content = f"""[Unit]
+Description=DiscoPilot Discord Bot
+After=network.target
+
+[Service]
+ExecStart={python_path} -m discopilot.scripts.run_bot
+WorkingDirectory={os.path.expanduser('~')}
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+    # Write service file
+    service_path = "/etc/systemd/system/discopilot.service"
+    try:
+        with open(service_path, "w") as f:
+            f.write(service_content)
+        print(
+            f"Service file created at {service_path}. "
+            "You can now start the service with 'sudo systemctl start discopilot'"
+        )
+    except PermissionError:
+        print("Error: You need root privileges to create the service file.")
+        print("Try running this script with sudo.")
+        return False
+
+    # Reload systemd
+    try:
+        subprocess.run(["systemctl", "daemon-reload"], check=True)
+    except subprocess.CalledProcessError:
+        print(
+            "Error reloading systemd. Please run 'sudo systemctl daemon-reload' manually."
+        )
+        return False
+
+    # Enable service
+    try:
+        subprocess.run(["systemctl", "enable", "discopilot"], check=True)
+        print("Service enabled. It will start automatically on boot.")
+    except subprocess.CalledProcessError:
+        print(
+            "Error enabling service. Please run 'sudo systemctl enable discopilot' manually."
+        )
+        return False
+
+    # Start service
+    try:
+        subprocess.run(["systemctl", "start", "discopilot"], check=True)
+        print(
+            "Service started. " "Check status with 'sudo systemctl status discopilot'"
+        )
+    except subprocess.CalledProcessError:
+        print(
+            "Error starting service. Please run 'sudo systemctl start discopilot' manually."
+        )
+        return False
+
+    # Create aliases
+    bashrc_path = os.path.expanduser("~/.bashrc")
+    aliases = """
+# DiscoPilot aliases
+alias discopilot-status="systemctl status discopilot"
+alias discopilot-restart="systemctl restart discopilot"
+alias discopilot-logs="journalctl -u discopilot -f"
+"""
+
+    try:
+        with open(bashrc_path, "a") as f:
+            f.write(aliases)
+        print(
+            "Created aliases in ~/.bashrc. "
+            "Please restart your shell or run 'source ~/.bashrc' to use them."
+        )
+    except Exception as e:
+        print(f"Error creating aliases: {e}")
+
+    return True
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Install DiscoPilot as a system service")
-    parser.add_argument("--working-dir", default=os.getcwd(), help="Working directory for the service")
-    args = parser.parse_args()
-    
-    system = platform.system()
-    username = getpass.getuser()
-    
-    if system == "Linux":
-        service_path = "/etc/systemd/system/discopilot.service"
-        service_content = create_systemd_service(username, args.working_dir)
-        
-        print(f"To install as a systemd service, run the following commands:")
-        print(f"sudo bash -c 'cat > {service_path} << EOL\n{service_content}EOL'")
-        print("sudo systemctl daemon-reload")
-        print("sudo systemctl enable discopilot")
-        print("sudo systemctl start discopilot")
-        print("\nTo check status:")
-        print("sudo systemctl status discopilot")
-        
-    elif system == "Darwin":  # macOS
-        plist_path = f"/Users/{username}/Library/LaunchAgents/com.user.discopilot.plist"
-        plist_content = create_launchd_plist(username, args.working_dir)
-        
-        print(f"To install as a launchd service, run the following commands:")
-        print(f"cat > {plist_path} << EOL\n{plist_content}EOL")
-        print(f"launchctl load {plist_path}")
-        print("\nTo check status:")
-        print("launchctl list | grep discopilot")
-        
-    elif system == "Windows":
-        print("For Windows, you can use Task Scheduler or NSSM (Non-Sucking Service Manager).")
-        print("NSSM installation example:")
-        print("1. Download NSSM from https://nssm.cc/")
-        print("2. Run: nssm.exe install DiscoPilot")
-        print(f"3. Set the path to: {sys.executable}")
-        print("4. Set arguments to: -m discopilot.scripts.run_bot")
-        print(f"5. Set working directory to: {args.working_dir}")
-        
-    else:
-        print(f"Unsupported operating system: {system}")
+    """Main function."""
+    if os.geteuid() != 0:
+        print("This script must be run as root (sudo).")
         sys.exit(1)
 
+    if install_service():
+        print("DiscoPilot service installed successfully!")
+    else:
+        print("Failed to install DiscoPilot service.")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    main() 
+    main()
