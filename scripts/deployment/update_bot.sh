@@ -25,7 +25,7 @@ fi
 
 # Reinstall dependencies with uv
 echo "Reinstalling dependencies with uv..."
-if su - botuser -c "cd ~/discopilot && /home/botuser/.local/bin/uv pip install -e ."; then
+if su - botuser -c "cd ~/discopilot && /home/botuser/.local/bin/uv venv && /home/botuser/.local/bin/uv pip install -e ."; then
   echo "✅ Successfully installed dependencies"
 else
   echo "❌ Failed to install dependencies"
