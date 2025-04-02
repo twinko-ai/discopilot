@@ -23,9 +23,9 @@ else
   exit 1
 fi
 
-# Reinstall dependencies with Poetry
-echo "Reinstalling dependencies with Poetry..."
-if su - botuser -c "cd ~/discopilot && ~/.local/bin/poetry install"; then
+# Reinstall dependencies with uv
+echo "Reinstalling dependencies with uv..."
+if su - botuser -c "cd ~/discopilot && /home/botuser/.local/bin/uv pip install -e ."; then
   echo "✅ Successfully installed dependencies"
 else
   echo "❌ Failed to install dependencies"

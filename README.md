@@ -169,10 +169,13 @@ To deploy DiscoPilot on AWS Lightsail:
 3. Choose a location (AWS Region) close to you
 4. Select "Linux/Unix" platform
 5. Choose "Ubuntu 24.04 LTS" as the blueprint
-6. Select the $3.50/month plan (1 vCPU, 512MB RAM)
-7. Name your instance (e.g., "discopilot")
-8. Click "Add launch script" and paste the content of `scripts/deployment/lightsail_launch.sh`
-9. Click "Create instance"
+6. Click "Add launch script" and paste the content of `scripts/deployment/lightsail_launch.sh`
+7. Use default SSH key or create a new one
+8. Enable automatic snapshots
+9. Select network type 
+10. Select the instance plan like $5/month
+11. Name your instance (e.g., "discopilot")
+12. Click "Create instance"
 
 After the instance is created:
 

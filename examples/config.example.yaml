@@ -20,3 +20,6 @@ twitter:
   access_secret: "YOUR_TWITTER_ACCESS_SECRET"
   bearer_token: "YOUR_TWITTER_BEARER_TOKEN"
 # Add other platform configurations as needed
+# OAuth 2.0 credentials (new)
+  client_id: "YOUR_CLIENT_ID"
+  client_secret: "YOUR_CLIENT_SECRET"
