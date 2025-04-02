@@ -15,7 +15,7 @@ class TwitterPublisher(BasePublisher):
 
     def __init__(self, config: Dict):
         """Initialize the Twitter publisher."""
-        super().__init__()
+        super().__init__(config)
 
         # Get Twitter API credentials from config
         twitter_config = config.get("twitter", {})

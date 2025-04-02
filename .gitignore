@@ -11,3 +11,7 @@ wheels/
 
 # Discort related
 discopilot.log
+
+# Coverage data
+.coverage
+htmlcov/
