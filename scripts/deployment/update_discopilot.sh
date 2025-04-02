@@ -23,6 +23,15 @@ else
   exit 1
 fi
 
+# Update scripts in /usr/local/bin
+echo "Updating scripts in /usr/local/bin..."
+if /usr/local/bin/update-discopilot-scripts.sh; then
+  echo "✅ Successfully updated scripts"
+else
+  echo "❌ Failed to update scripts"
+  exit 1
+fi
+
 # Reinstall dependencies with uv
 echo "Reinstalling dependencies with uv..."
 if su - botuser -c "cd ~/discopilot && bash scripts/deployment/install_dependencies.sh"; then

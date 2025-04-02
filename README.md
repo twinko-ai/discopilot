@@ -188,6 +188,10 @@ After the instance is created:
 1. Connect to your instance via SSH
 2. Update the configuration file:
    ```bash
+   edit-config
+   ```
+   or
+   ```bash
    sudo nano /home/botuser/.config/discopilot/config.yaml
    ```
 3. Start the service:
@@ -199,8 +203,18 @@ After the instance is created:
 
 The following commands are available after deployment:
 
-- `update-bot`: Pull the latest code from GitHub and restart the bot
+- `update-bot`: Pull the latest code from GitHub, update scripts, reinstall dependencies, and restart the bot
 - `restart-bot`: Restart the bot without updating
 - `bot-logs`: View the bot's logs in real-time
+- `edit-config`: Edit the bot configuration file
+
+### Manual Script Usage
+
+If you prefer to run the scripts directly instead of using the aliases:
+
+- `/usr/local/bin/update_discopilot.sh`: Update the bot from GitHub and restart
+- `/usr/local/bin/restart_discopilot.sh`: Restart the bot without updating
+- `/usr/local/bin/run_discopilot.sh`: Run the bot manually (used by the systemd service)
+- `/usr/local/bin/update-discopilot-scripts.sh`: Update the scripts in /usr/local/bin with the latest versions from the repository
 
 

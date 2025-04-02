@@ -82,17 +82,31 @@ find /home/botuser/discopilot/scripts/deployment -name "*.sh" -exec chmod +x {} 
 # Copy scripts to /usr/local/bin
 mkdir -p /usr/local/bin
 
+# Create a script to update the scripts in /usr/local/bin
+cat > /usr/local/bin/update-discopilot-scripts.sh << 'EOF'
+#!/bin/bash
+
+# Script to update the DiscoPilot scripts in /usr/local/bin
+echo "Updating DiscoPilot scripts in /usr/local/bin..."
+
 # Copy run script
-cp /home/botuser/discopilot/scripts/deployment/run_discopilot.sh /usr/local/bin/run-discopilot.sh
-chmod +x /usr/local/bin/run-discopilot.sh
+cp /home/botuser/discopilot/scripts/deployment/run_discopilot.sh /usr/local/bin/run_discopilot.sh
+chmod +x /usr/local/bin/run_discopilot.sh
 
 # Copy update script
-cp /home/botuser/discopilot/scripts/deployment/update_bot.sh /usr/local/bin/update-discopilot.sh
-chmod +x /usr/local/bin/update-discopilot.sh
+cp /home/botuser/discopilot/scripts/deployment/update_discopilot.sh /usr/local/bin/update_discopilot.sh
+chmod +x /usr/local/bin/update_discopilot.sh
 
 # Copy restart script
-cp /home/botuser/discopilot/scripts/deployment/restart_bot.sh /usr/local/bin/restart-discopilot.sh
-chmod +x /usr/local/bin/restart-discopilot.sh
+cp /home/botuser/discopilot/scripts/deployment/restart_discopilot.sh /usr/local/bin/restart_discopilot.sh
+chmod +x /usr/local/bin/restart_discopilot.sh
+
+echo "✅ Scripts updated"
+EOF
+chmod +x /usr/local/bin/update-discopilot-scripts.sh
+
+# Run the script to copy the scripts
+/usr/local/bin/update-discopilot-scripts.sh
 
 print_success "Scripts installed"
 
@@ -140,7 +154,7 @@ After=network.target
 [Service]
 User=botuser
 WorkingDirectory=/home/botuser/discopilot
-ExecStart=/usr/local/bin/run-discopilot.sh
+ExecStart=/usr/local/bin/run_discopilot.sh
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -157,8 +171,8 @@ print_success "Service enabled"
 
 # Create aliases
 print_step "Creating aliases"
-echo 'alias update-bot="sudo /usr/local/bin/update-discopilot.sh"' >> /home/ubuntu/.bashrc
-echo 'alias restart-bot="sudo /usr/local/bin/restart-discopilot.sh"' >> /home/ubuntu/.bashrc
+echo 'alias update-bot="sudo /usr/local/bin/update_discopilot.sh"' >> /home/ubuntu/.bashrc
+echo 'alias restart-bot="sudo /usr/local/bin/restart_discopilot.sh"' >> /home/ubuntu/.bashrc
 echo 'alias bot-logs="sudo journalctl -u discopilot -f"' >> /home/ubuntu/.bashrc
 echo 'alias edit-config="sudo nano /home/botuser/.config/discopilot/config.yaml"' >> /home/ubuntu/.bashrc
 print_success "Aliases created"
@@ -207,7 +221,7 @@ print_success "README created"
 # Final verification
 print_step "Performing final verification"
 ls -la /home/botuser
-ls -la /usr/local/bin/run-discopilot.sh
+ls -la /usr/local/bin/run_discopilot.sh
 ls -la /etc/systemd/system/discopilot.service
 
 print_step "INSTALLATION COMPLETE!"
