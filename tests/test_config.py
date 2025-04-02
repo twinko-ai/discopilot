@@ -1,4 +1,5 @@
 import tempfile
+
 import yaml
 
 from discopilot.utils.config import load_config
