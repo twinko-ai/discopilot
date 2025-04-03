@@ -30,7 +30,7 @@ fi
 
 # Run the bot using the virtual environment
 log "Running bot with: ./.venv/bin/python -m discopilot.scripts.run_bot"
-./.venv/bin/python -m discopilot.scripts.run_bot 2>> "$LOG_FILE"
+exec ./.venv/bin/python -m discopilot.scripts.run_bot 2>> "$LOG_FILE"
 
-# Log exit
-log "Script exited with code: $?"
+# This line will never be reached because exec replaces the current process
+# log "Script exited with code: $?"

@@ -90,18 +90,33 @@ cat > /usr/local/bin/update-discopilot-scripts.sh << 'EOF'
 echo "Updating DiscoPilot scripts in /usr/local/bin..."
 
 # Copy run script
-cp /home/botuser/discopilot/scripts/deployment/run_discopilot.sh /usr/local/bin/run_discopilot.sh
-chmod +x /usr/local/bin/run_discopilot.sh
+if [ -f "/home/botuser/discopilot/scripts/deployment/run_discopilot.sh" ]; then
+  cp /home/botuser/discopilot/scripts/deployment/run_discopilot.sh /usr/local/bin/run_discopilot.sh
+  chmod +x /usr/local/bin/run_discopilot.sh
+  echo "✅ Updated run_discopilot.sh"
+else
+  echo "⚠️ run_discopilot.sh not found in repository"
+fi
 
 # Copy update script
-cp /home/botuser/discopilot/scripts/deployment/update_discopilot.sh /usr/local/bin/update_discopilot.sh
-chmod +x /usr/local/bin/update_discopilot.sh
+if [ -f "/home/botuser/discopilot/scripts/deployment/update_discopilot.sh" ]; then
+  cp /home/botuser/discopilot/scripts/deployment/update_discopilot.sh /usr/local/bin/update_discopilot.sh
+  chmod +x /usr/local/bin/update_discopilot.sh
+  echo "✅ Updated update_discopilot.sh"
+else
+  echo "⚠️ update_discopilot.sh not found in repository"
+fi
 
 # Copy restart script
-cp /home/botuser/discopilot/scripts/deployment/restart_discopilot.sh /usr/local/bin/restart_discopilot.sh
-chmod +x /usr/local/bin/restart_discopilot.sh
+if [ -f "/home/botuser/discopilot/scripts/deployment/restart_discopilot.sh" ]; then
+  cp /home/botuser/discopilot/scripts/deployment/restart_discopilot.sh /usr/local/bin/restart_discopilot.sh
+  chmod +x /usr/local/bin/restart_discopilot.sh
+  echo "✅ Updated restart_discopilot.sh"
+else
+  echo "⚠️ restart_discopilot.sh not found in repository"
+fi
 
-echo "✅ Scripts updated"
+echo "Scripts update complete"
 EOF
 chmod +x /usr/local/bin/update-discopilot-scripts.sh
 

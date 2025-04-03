@@ -8,7 +8,7 @@ from ..publishers.base_publisher import BasePublisher
 logger = logging.getLogger(__name__)
 
 
-class DiscordClient(discord.Client):
+class HedwigBot(discord.Client):
     """Discord client for the DiscoPilot bot."""
 
     def __init__(
