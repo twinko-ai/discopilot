@@ -169,3 +169,17 @@ class Config:
     def is_server_restricted(self):
         """Check if the bot is restricted to specific servers."""
         return len(self.server_ids) > 0
+
+    def get(self, key, default=None):
+        """Get a configuration value with a default fallback.
+        
+        Args:
+            key: The configuration key to look up
+            default: The default value to return if the key is not found
+            
+        Returns:
+            The configuration value or the default
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        return default
