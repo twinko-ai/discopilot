@@ -23,6 +23,14 @@ else
   exit 1
 fi
 
+# Clean up Python cache files
+echo "Cleaning up Python cache files..."
+if su - botuser -c "cd ~/discopilot && find . -name '*.pyc' -delete && find . -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true"; then
+  echo "✅ Successfully cleaned Python cache"
+else
+  echo "⚠️ Warning: Could not clean all cache files"
+fi
+
 # Update scripts in /usr/local/bin
 echo "Updating scripts in /usr/local/bin..."
 if /usr/local/bin/update-discopilot-scripts.sh; then
