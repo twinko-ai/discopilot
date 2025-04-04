@@ -172,11 +172,11 @@ class Config:
 
     def get(self, key, default=None):
         """Get a configuration value with a default fallback.
-        
+
         Args:
             key: The configuration key to look up
             default: The default value to return if the key is not found
-            
+
         Returns:
             The configuration value or the default
         """
