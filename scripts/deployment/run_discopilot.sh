@@ -28,9 +28,9 @@ if [ ! -d ".venv" ]; then
     "$UV_PATH" pip install -e .
 fi
 
-# Run the bot using the virtual environment
-log "Running bot with: ./.venv/bin/python -m discopilot.scripts.run_bot"
-exec ./.venv/bin/python -m discopilot.scripts.run_bot 2>> "$LOG_FILE"
+# Run the bot using the virtual environment with debug logging
+log "Running bot with: ./.venv/bin/python -m discopilot.scripts.run_bot --log-level=DEBUG"
+exec ./.venv/bin/python -m discopilot.scripts.run_bot --log-level=DEBUG 2>> "$LOG_FILE"
 
 # This line will never be reached because exec replaces the current process
 # log "Script exited with code: $?"

@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+import os
+import sys
+import yaml
+import tweepy
+import logging
+
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("twitter-test")
+
+# Load config
+config_path = "/home/botuser/.config/discopilot/config.yaml"
+try:
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    logger.info(f"Loaded config from {config_path}")
+except Exception as e:
+    logger.error(f"Failed to load config: {e}")
+    sys.exit(1)
+
+# Get Twitter credentials
+twitter = config.get('twitter', {})
+api_key = twitter.get('api_key')
+api_secret = twitter.get('api_secret')
+access_token = twitter.get('access_token')
+access_secret = twitter.get('access_secret')
+bearer_token = twitter.get('bearer_token')
+
+# Mask credentials for logging
+def mask_string(s):
+    if not s:
+        return None
+    return s[:4] + "..." + s[-4:] if len(s) > 8 else "***"
+
+logger.info(f"API Key: {mask_string(api_key)}")
+logger.info(f"API Secret: {mask_string(api_secret)}")
+logger.info(f"Access Token: {mask_string(access_token)}")
+logger.info(f"Access Secret: {mask_string(access_secret)}")
+logger.info(f"Bearer Token: {mask_string(bearer_token)}")
+
+# Check if credentials are provided
+if not all([api_key, api_secret, access_token, access_secret]):
+    logger.error("Twitter API credentials not fully configured")
+    sys.exit(1)
+
+try:
+    # Set up authentication
+    logger.info("Setting up OAuth1 authentication")
+    auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
+    api = tweepy.API(auth)
+    
+    # Verify credentials
+    logger.info("Verifying credentials")
+    user = api.verify_credentials()
+    logger.info(f"Successfully authenticated as: {user.screen_name}")
+    
+    # Initialize Twitter API v2 client
+    logger.info("Initializing Twitter API v2 client")
+    client = tweepy.Client(
+        bearer_token=bearer_token,
+        consumer_key=api_key,
+        consumer_secret=api_secret,
+        access_token=access_token,
+        access_token_secret=access_secret,
+    )
+    
+    # Post a test tweet
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    tweet = f"Test tweet from DiscoPilot at {timestamp}"
+    logger.info(f"Posting tweet: {tweet}")
+    
+    # Try both API v1 and v2
+    try:
+        logger.info("Attempting to post with API v1")
+        v1_result = api.update_status(tweet + " (v1)")
+        logger.info(f"V1 Tweet posted successfully! ID: {v1_result.id}")
+    except Exception as e:
+        logger.error(f"Error posting with API v1: {e}")
+    
+    try:
+        logger.info("Attempting to post with API v2")
+        v2_result = client.create_tweet(text=tweet + " (v2)")
+        logger.info(f"V2 Tweet posted successfully! Data: {v2_result.data}")
+    except Exception as e:
+        logger.error(f"Error posting with API v2: {e}")
+    
+except Exception as e:
+    logger.error(f"Error: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    sys.exit(1)

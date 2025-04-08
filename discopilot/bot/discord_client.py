@@ -49,16 +49,22 @@ class HedwigBot(discord.Client):
 
     async def on_reaction_add(self, reaction, user):
         """Handle reaction added to a message."""
+        logger.debug(f"Reaction detected: {reaction.emoji} by user {user.name} ({user.id})")
+        
         # Ignore bot's own reactions
         if user.id == self.user.id:
+            logger.debug(f"Ignoring bot's own reaction")
             return
 
         # Check if reaction is the trigger emoji
         emoji = str(reaction.emoji)
+        logger.debug(f"Comparing reaction emoji '{emoji}' with trigger emoji '{self.trigger_emoji}'")
         if emoji != self.trigger_emoji:
+            logger.debug(f"Emoji doesn't match trigger emoji, ignoring")
             return
 
         # Check if user is an admin (if admin list is configured)
+        logger.debug(f"Checking if user {user.id} is in admin list: {self.admin_ids}")
         if self.admin_ids and user.id not in self.admin_ids:
             logger.warning(
                 f"User {user.name} ({user.id}) tried to publish but is not an admin"
@@ -66,12 +72,15 @@ class HedwigBot(discord.Client):
             return
 
         message = reaction.message
+        logger.debug(f"Message content: {message.content[:50]}...")
         logger.info(
             f"Reaction added by {user.name} ({user.id}) to message {message.id} "
             f"with emoji {emoji}"
         )
 
         # Check if message is in a server we're listening to
+        server_id = message.guild.id if message.guild else None
+        logger.debug(f"Message server ID: {server_id}, Allowed server IDs: {self.server_ids}")
         if (
             self.server_ids
             and message.guild
@@ -83,10 +92,13 @@ class HedwigBot(discord.Client):
             )
             return
 
+        logger.debug(f"All checks passed, publishing message")
         await self.publish_message(message)
 
     async def publish_message(self, message):
         """Publish a message to all configured platforms."""
+        logger.debug(f"publish_message called for message ID: {message.id}")
+        
         if not self.publishers:
             logger.warning("No publishers configured")
             await message.reply(
@@ -98,10 +110,14 @@ class HedwigBot(discord.Client):
             f"Publishing message {message.id} from {message.author.name} "
             f"to {len(self.publishers)} platforms"
         )
+        
+        logger.debug(f"Available publishers: {list(self.publishers.keys())}")
 
         results = []
         for name, publisher in self.publishers.items():
+            logger.debug(f"Attempting to publish to {name}")
             try:
+                logger.debug(f"Calling {name}.publish() method")
                 status, url = await publisher.publish(message)
                 logger.info(
                     f"Message {message.id} published to {name} with status {status} "
@@ -110,6 +126,8 @@ class HedwigBot(discord.Client):
                 results.append((name, status, url))
             except Exception as e:
                 logger.error(f"Error publishing to {name}: {e}", exc_info=True)
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
                 results.append((name, f"Error: {str(e)}", None))
 
         # Reply with results
@@ -120,6 +138,7 @@ class HedwigBot(discord.Client):
                 reply += f" - {url}"
             reply += "\n"
 
+        logger.debug(f"Sending reply: {reply}")
         await message.reply(reply, mention_author=False)
 
     def add_publisher(self, name: str, publisher: BasePublisher):
