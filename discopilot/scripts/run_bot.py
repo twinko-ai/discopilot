@@ -2,7 +2,7 @@ import asyncio
 import logging
 import sys
 
-from ..bot.discord_client import HedwigBot
+from ..bot.discord_client import DiscordClient as HedwigBot
 from ..publishers import get_publishers
 from ..utils.config import Config
 
