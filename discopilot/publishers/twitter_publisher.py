@@ -18,12 +18,11 @@ class TwitterPublisher(BasePublisher):
         super().__init__(config)
 
         # Get Twitter API credentials from config
-        twitter_config = config.get("twitter", {})
-        self.api_key = twitter_config.get("api_key")
-        self.api_secret = twitter_config.get("api_secret")
-        self.access_token = twitter_config.get("access_token")
-        self.access_secret = twitter_config.get("access_secret")
-        self.bearer_token = twitter_config.get("bearer_token")
+        self.api_key = config.twitter_api_key
+        self.api_secret = config.twitter_api_secret
+        self.access_token = config.twitter_access_token
+        self.access_secret = config.twitter_access_secret
+        self.bearer_token = config.twitter_bearer_token
 
         # Check if credentials are provided
         if not all(
