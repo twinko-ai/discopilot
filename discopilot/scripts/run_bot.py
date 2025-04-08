@@ -2,7 +2,7 @@ import asyncio
 import logging
 import sys
 
-from ..bot.discord_client import DiscordClient as HedwigBot
+from ..bot.discord_client import HedwigBot
 from ..publishers import get_publishers
 from ..utils.config import Config
 
@@ -28,7 +28,16 @@ def main():
     publishers = get_publishers(config)
 
     # Initialize the Discord client
-    client = HedwigBot(config, publishers)
+    client = HedwigBot(
+        token=config.discord_token,
+        server_ids=config.server_ids,
+        admin_ids=config.admin_ids,
+        trigger_emoji=config.trigger_emoji,
+    )
+    
+    # Add publishers after initialization
+    for name, publisher in publishers.items():
+        client.add_publisher(name, publisher)
 
     # Run the client
     try:
