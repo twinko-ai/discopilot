@@ -233,6 +233,115 @@ EOF
 chmod 644 /home/ubuntu/DISCOPILOT_README.txt
 print_success "README created"
 
+# Update run_discopilot.sh to ensure setuptools is installed
+print_step "Updating run_discopilot.sh"
+cat > /home/botuser/discopilot/scripts/deployment/run_discopilot.sh << 'EOF'
+#!/bin/bash
+
+# Log file
+LOG_FILE="/home/botuser/discopilot_wrapper.log"
+
+# Log function
+log() {
+    echo "$(date): $1" >> "$LOG_FILE"
+}
+
+# Start logging
+log "Starting DiscoPilot bot using virtual environment"
+log "Current directory: $(pwd)"
+log "User: $(whoami)"
+
+# Change to the discopilot directory
+cd /home/botuser/discopilot
+log "Changed directory to: $(pwd)"
+
+# Use the correct path to uv
+UV_PATH="/home/botuser/.local/bin/uv"
+
+# Ensure the virtual environment exists
+if [ ! -d ".venv" ]; then
+    log "Virtual environment not found, creating it..."
+    "$UV_PATH" venv
+fi
+
+# Always install dependencies to ensure they're up to date
+log "Installing dependencies..."
+"$UV_PATH" pip install -e .
+"$UV_PATH" pip install setuptools  # Explicitly install setuptools
+
+# Run the bot using the virtual environment with debug logging
+log "Running bot with: ./.venv/bin/python -m discopilot.scripts.run_bot --log-level=DEBUG"
+exec ./.venv/bin/python -m discopilot.scripts.run_bot --log-level=DEBUG 2>> "$LOG_FILE"
+
+# This line will never be reached because exec replaces the current process
+EOF
+chmod +x /home/botuser/discopilot/scripts/deployment/run_discopilot.sh
+cp /home/botuser/discopilot/scripts/deployment/run_discopilot.sh /usr/local/bin/run_discopilot.sh
+chmod +x /usr/local/bin/run_discopilot.sh
+print_success "Updated run_discopilot.sh with setuptools installation"
+
+# Update install_dependencies.sh script
+print_step "Updating install_dependencies.sh"
+cat > /home/botuser/discopilot/scripts/deployment/install_dependencies.sh << 'EOF'
+#!/bin/bash
+
+echo "=== Installing DiscoPilot Dependencies with uv from pyproject.toml ==="
+
+# Change to the discopilot directory
+cd /home/botuser/discopilot
+
+# Use the correct path to uv
+UV_PATH="/home/botuser/.local/bin/uv"
+
+# Check if uv is available
+if [ ! -f "$UV_PATH" ]; then
+    echo "❌ uv not found at $UV_PATH"
+    echo "Attempting to install uv..."
+    
+    # Install uv
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    
+    # Check if installation succeeded
+    if [ ! -f "$UV_PATH" ]; then
+        echo "❌ Failed to install uv. Cannot proceed."
+        exit 1
+    else
+        echo "✅ Successfully installed uv at $UV_PATH"
+    fi
+else
+    echo "✅ Found uv at $UV_PATH"
+fi
+
+# Create or update virtual environment
+echo "Creating/updating virtual environment..."
+"$UV_PATH" venv
+echo "✅ Virtual environment created/updated with uv"
+
+# Check for pyproject.toml
+if [ -f "pyproject.toml" ]; then
+    echo "Installing dependencies from pyproject.toml..."
+    "$UV_PATH" pip install -e .
+    echo "✅ Dependencies installed from pyproject.toml"
+else
+    echo "❌ No pyproject.toml found. Cannot proceed."
+    exit 1
+fi
+
+# Ensure setuptools is installed (needed for pkg_resources)
+echo "Ensuring setuptools is installed..."
+"$UV_PATH" pip install setuptools
+echo "✅ setuptools installed/verified"
+
+# Ensure discord.py is installed (in case it's not in pyproject.toml)
+echo "Ensuring discord.py is installed..."
+"$UV_PATH" pip install discord.py
+echo "✅ discord.py installed/verified"
+
+echo "=== Dependency Installation Complete ==="
+EOF
+chmod +x /home/botuser/discopilot/scripts/deployment/install_dependencies.sh
+print_success "Updated install_dependencies.sh with setuptools installation"
+
 # Final verification
 print_step "Performing final verification"
 ls -la /home/botuser
