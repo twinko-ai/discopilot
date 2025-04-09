@@ -21,22 +21,18 @@ jobs:
         python-version: ${{ matrix.python-version }}
     
     - name: Install uv
-      uses: astral-sh/setup-uv-action@v1
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
     
     - name: Install dependencies with uv
       run: |
-        # Create a virtual environment
-        uv venv
-        # Activate the virtual environment
-        source .venv/bin/activate
-        # Install dependencies
-        uv pip install -e .[dev]
-        uv pip list
+        # Install directly to the system Python (GitHub Actions runner)
+        ~/.cargo/bin/uv pip install --system -e .[dev]
+        ~/.cargo/bin/uv pip list --system
     
     - name: Debug environment
       run: |
-        # Ensure we're in the virtual environment
-        source .venv/bin/activate
         echo "Python path:"
         python -c "import sys; print(sys.path)"
         echo "Package structure:"
@@ -48,22 +44,18 @@ jobs:
     
     - name: Check formatting with black
       run: |
-        source .venv/bin/activate
         black --check .
     
     - name: Check imports with isort
       run: |
-        source .venv/bin/activate
         isort --check .
     
     - name: Lint with flake8
       run: |
-        source .venv/bin/activate
         flake8 .
     
     - name: Test with pytest
       run: |
-        source .venv/bin/activate
         pytest -v --cov=discopilot --cov-report=xml
     
     - name: Upload coverage to Codecov
