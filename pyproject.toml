@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "discopilot"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Discord bot that cross-posts to social media platforms"
 readme = "README.md"
 authors = [
