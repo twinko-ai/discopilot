@@ -17,7 +17,9 @@ class HedwigBot(discord.Client):
         token: str,
         server_ids: Optional[List[int]] = None,
         admin_ids: Optional[List[int]] = None,
+        channel_ids: Optional[List[int]] = None,
         trigger_emoji: str = "📢",
+        send_notifications: bool = False,
         *args,
         **kwargs,
     ):
@@ -31,12 +33,15 @@ class HedwigBot(discord.Client):
         self.token = token
         self.server_ids = server_ids or []
         self.admin_ids = admin_ids or []
+        self.channel_ids = channel_ids or []
         self.trigger_emoji = trigger_emoji
+        self.send_notifications = send_notifications
         self.publishers: Dict[str, BasePublisher] = {}
 
         logger.info(f"Initialized Discord client with trigger emoji: {trigger_emoji}")
         logger.info(f"Trigger emoji repr: {repr(trigger_emoji)}")
         logger.info(f"Trigger emoji bytes: {trigger_emoji.encode('utf-8').hex()}")
+        logger.info(f"Send notifications: {send_notifications}")
         
         if server_ids:
             logger.info(f"Listening to server IDs: {', '.join(map(str, server_ids))}")
@@ -47,6 +52,11 @@ class HedwigBot(discord.Client):
             logger.info(f"Admin IDs: {', '.join(map(str, admin_ids))}")
         else:
             logger.warning("No admin IDs configured - anyone can trigger publishing")
+        
+        if channel_ids:
+            logger.info(f"Listening to channel IDs: {', '.join(map(str, channel_ids))}")
+        else:
+            logger.info("Listening to all channels")
 
     async def on_ready(self):
         """Handle the bot being ready."""
@@ -57,9 +67,7 @@ class HedwigBot(discord.Client):
             
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         """Handle raw reaction add event."""
-        # This is the key method that was missing!
         logger.info(f"Raw reaction detected: {payload.emoji} by user {payload.user_id}")
-        print(f"RAW REACTION DETECTED: {payload.emoji} by user {payload.user_id}")
         
         # Check if the emoji matches our trigger
         if str(payload.emoji) != self.trigger_emoji:
@@ -74,6 +82,11 @@ class HedwigBot(discord.Client):
         # Check if message is in a server we're listening to
         if self.server_ids and payload.guild_id not in self.server_ids:
             logger.warning(f"Message is in server {payload.guild_id} which is not in the allowed list")
+            return
+            
+        # Check if message is in a channel we're listening to
+        if self.channel_ids and payload.channel_id not in self.channel_ids:
+            logger.warning(f"Message is in channel {payload.channel_id} which is not in the allowed list")
             return
             
         # Get the channel and message
@@ -93,49 +106,38 @@ class HedwigBot(discord.Client):
 
     async def publish_message(self, message):
         """Publish a message to all configured platforms."""
-        logger.debug(f"publish_message called for message ID: {message.id}")
+        logger.info(f"Publishing message {message.id} from {message.author}")
         
-        if not self.publishers:
-            logger.warning("No publishers configured")
-            await message.reply(
-                "No publishing platforms configured.", mention_author=False
-            )
-            return
-
-        logger.info(
-            f"Publishing message {message.id} from {message.author.name} "
-            f"to {len(self.publishers)} platforms"
-        )
+        results = {}
         
-        logger.debug(f"Available publishers: {list(self.publishers.keys())}")
-
-        results = []
         for name, publisher in self.publishers.items():
-            logger.debug(f"Attempting to publish to {name}")
             try:
-                logger.debug(f"Calling {name}.publish() method")
+                logger.info(f"Publishing to {name}...")
                 status, url = await publisher.publish(message)
-                logger.info(
-                    f"Message {message.id} published to {name} with status {status} "
-                    f"and URL {url}"
-                )
-                results.append((name, status, url))
+                results[name] = {"status": status, "url": url}
+                logger.info(f"Published to {name}: {status}")
             except Exception as e:
                 logger.error(f"Error publishing to {name}: {e}", exc_info=True)
-                import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
-                results.append((name, f"Error: {str(e)}", None))
-
-        # Reply with results
-        reply = "Publishing results:\n"
-        for publisher_name, status, url in results:
-            reply += f"- {publisher_name}: {status}"
+                results[name] = {"status": f"Error: {str(e)}", "url": None}
+        
+        # Format results message
+        result_lines = ["Publishing results:"]
+        for platform, result in results.items():
+            status = result["status"]
+            url = result["url"]
+            result_line = f"- {platform}: {status}"
             if url:
-                reply += f" - {url}"
-            reply += "\n"
-
-        logger.debug(f"Sending reply: {reply}")
-        await message.reply(reply, mention_author=False)
+                result_line += f" - {url}"
+            result_lines.append(result_line)
+        
+        result_message = "\n".join(result_lines)
+        logger.info(result_message)
+        
+        # Only send notification if enabled
+        if self.send_notifications:
+            await message.channel.send(result_message)
+        
+        return results
 
     def add_publisher(self, name: str, publisher: BasePublisher):
         """Add a publisher to the client."""

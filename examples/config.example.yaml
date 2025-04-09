@@ -3,14 +3,21 @@
 
 discord:
   token: "YOUR_DISCORD_TOKEN"
-
-# Admin users who can trigger publishing
-admin_ids:
-  - 123456789012345678  # Your Discord user ID
-
-# Trigger configuration
-triggers:
-  emoji: "📢"  # The emoji that triggers publishing
+  # Allowed server IDs (optional)
+  servers:
+    - 123456789012345678  # Your Discord server ID
+  # Admin users who can trigger publishing
+  admins:
+    - 123456789012345678  # Your Discord user ID
+  # Allowed channel IDs (optional)
+  allowed_channels:
+    - 123456789012345678  # Channel ID where bot should respond
+    - 234567890123456789  # Another channel ID
+  # Trigger configuration
+  triggers:
+    emoji: "📢"  # The emoji that triggers publishing
+  # Notification settings
+  send_notifications: false  # Set to true to enable publishing notifications
 
 # Twitter configuration
 twitter:
@@ -19,7 +26,8 @@ twitter:
   access_token: "YOUR_TWITTER_ACCESS_TOKEN"
   access_secret: "YOUR_TWITTER_ACCESS_SECRET"
   bearer_token: "YOUR_TWITTER_BEARER_TOKEN"
-# Add other platform configurations as needed
 # OAuth 2.0 credentials (new)
   client_id: "YOUR_CLIENT_ID"
   client_secret: "YOUR_CLIENT_SECRET"
+
+# Add other platform configurations as needed

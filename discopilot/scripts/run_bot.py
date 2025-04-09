@@ -53,7 +53,9 @@ def main():
         token=config.discord_token,
         server_ids=config.server_ids,
         admin_ids=config.admin_ids,
+        channel_ids=config.allowed_channel_ids,
         trigger_emoji=config.trigger_emoji,
+        send_notifications=config.send_notifications,
     )
     
     # Add publishers after initialization
