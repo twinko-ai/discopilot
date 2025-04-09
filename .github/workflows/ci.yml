@@ -20,16 +20,10 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
-    - name: Install uv
+    - name: Install dependencies
       run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-    
-    - name: Install dependencies with uv
-      run: |
-        # Install directly to the system Python (GitHub Actions runner)
-        ~/.cargo/bin/uv pip install --system -e .[dev]
-        ~/.cargo/bin/uv pip list --system
+        python -m pip install --upgrade pip
+        pip install -e .[dev]
     
     - name: Debug environment
       run: |
