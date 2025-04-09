@@ -36,8 +36,7 @@ jobs:
         echo "Is discopilot importable?"
         python -c "import discopilot; print('Yes')"
         echo "Is discopilot.utils importable?"
-        python -c "import sys; 
-import discopilot.utils; print('Yes')" || echo "No: Failed to import discopilot.utils"
+        python -c "import sys; import discopilot.utils; print('Yes')" || echo "No: Failed to import discopilot.utils"
     
     - name: Check formatting with black
       run: |
