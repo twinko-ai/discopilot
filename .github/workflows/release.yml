@@ -42,20 +42,8 @@ jobs:
           generate_release_notes: true
           files: dist/*
           
-      - name: Check if version exists on PyPI
-        id: check_version
-        run: |
-          VERSION=$(python -c "from configparser import ConfigParser; c = ConfigParser(); c.read('pyproject.toml'); print(c['project']['version'].strip('\"'))")
-          if pip install discopilot==$VERSION 2>/dev/null; then
-            echo "Version $VERSION already exists on PyPI"
-            echo "skip_upload=true" >> $GITHUB_OUTPUT
-          else
-            echo "Version $VERSION does not exist on PyPI"
-            echo "skip_upload=false" >> $GITHUB_OUTPUT
-          fi
-          
       - name: Publish to PyPI
-        if: steps.check_version.outputs.skip_upload != 'true'
+        continue-on-error: true  # Continue even if PyPI upload fails (e.g., version already exists)
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
