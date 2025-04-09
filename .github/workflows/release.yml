@@ -29,13 +29,20 @@ jobs:
         run: |
           python -m build
           
+      - name: Debug - List build artifacts
+        run: |
+          echo "Contents of dist directory:"
+          ls -la dist/
+          echo "Full paths of artifacts:"
+          find $GITHUB_WORKSPACE/dist -type f
+          
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
           files: |
-            dist/*.whl
-            dist/*.tar.gz
+            ${{ github.workspace }}/dist/*.whl
+            ${{ github.workspace }}/dist/*.tar.gz
           
       - name: Publish to PyPI
         env:
