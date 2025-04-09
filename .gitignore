@@ -14,4 +14,5 @@ discopilot.log
 
 # Coverage data
 .coverage
+coverage.xml
 htmlcov/

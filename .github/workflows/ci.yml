@@ -19,22 +19,44 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+    
+    - name: Install uv
       run: |
-        python -m pip install --upgrade pip
-        pip install .[dev]
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Install dependencies with uv
+      run: |
+        uv pip install -e .[dev]
+        uv pip list
+    
+    - name: Debug environment
+      run: |
+        echo "Python path:"
+        python -c "import sys; print(sys.path)"
+        echo "Package structure:"
+        find discopilot -type f -name "*.py" | sort
+        echo "Is discopilot importable?"
+        python -c "import discopilot; print('Yes')"
+        echo "Is discopilot.utils importable?"
+        python -c "try: import discopilot.utils; print('Yes'); except ImportError as e: print(f'No: {e}')"
+    
     - name: Check formatting with black
       run: |
         black --check .
+    
     - name: Check imports with isort
       run: |
         isort --check .
+    
     - name: Lint with flake8
       run: |
         flake8 .
+    
     - name: Test with pytest
       run: |
-        pytest --cov=discopilot --cov-report=xml
+        pytest -v --cov=discopilot --cov-report=xml
+    
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
