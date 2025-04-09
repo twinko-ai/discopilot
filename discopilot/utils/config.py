@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 import yaml
 from dotenv import load_dotenv
@@ -140,33 +140,45 @@ class Config:
 
         # Discord configuration from environment variables
         self.discord_token = os.environ.get("DISCORD_TOKEN", self.discord_token)
-        
+
         # Server IDs from environment variables
         server_ids_env = os.environ.get("SERVER_IDS", "")
         if server_ids_env:
             self.server_ids = [int(id) for id in server_ids_env.split(",") if id]
-        
+
         # Admin IDs from environment variables
         admin_ids_env = os.environ.get("ADMIN_IDS", "")
         if admin_ids_env:
             self.admin_ids = [int(id) for id in admin_ids_env.split(",") if id]
-        
+
         # Trigger emoji from environment variables
         self._trigger_emoji = os.environ.get("TRIGGER_EMOJI", self._trigger_emoji)
-        
+
         # Twitter configuration from environment variables
         self.twitter_api_key = os.environ.get("TWITTER_API_KEY", self.twitter_api_key)
-        self.twitter_api_secret = os.environ.get("TWITTER_API_SECRET", self.twitter_api_secret)
-        self.twitter_access_token = os.environ.get("TWITTER_ACCESS_TOKEN", self.twitter_access_token)
-        self.twitter_access_secret = os.environ.get("TWITTER_ACCESS_SECRET", self.twitter_access_secret)
-        self.twitter_bearer_token = os.environ.get("TWITTER_BEARER_TOKEN", self.twitter_bearer_token)
-        
+        self.twitter_api_secret = os.environ.get(
+            "TWITTER_API_SECRET", self.twitter_api_secret
+        )
+        self.twitter_access_token = os.environ.get(
+            "TWITTER_ACCESS_TOKEN", self.twitter_access_token
+        )
+        self.twitter_access_secret = os.environ.get(
+            "TWITTER_ACCESS_SECRET", self.twitter_access_secret
+        )
+        self.twitter_bearer_token = os.environ.get(
+            "TWITTER_BEARER_TOKEN", self.twitter_bearer_token
+        )
+
         # New OAuth 2.0 credentials
         self.twitter_client_id = self.config.get("twitter", {}).get("client_id")
         self.twitter_client_secret = self.config.get("twitter", {}).get("client_secret")
-        self.twitter_oauth2_refresh_token = self.config.get("twitter", {}).get("oauth2_refresh_token")
-        self.twitter_oauth2_access_token = self.config.get("twitter", {}).get("oauth2_access_token")
-        
+        self.twitter_oauth2_refresh_token = self.config.get("twitter", {}).get(
+            "oauth2_refresh_token"
+        )
+        self.twitter_oauth2_access_token = self.config.get("twitter", {}).get(
+            "oauth2_access_token"
+        )
+
         # ... other configurations ...
 
     def _process_config(self):
@@ -174,22 +186,25 @@ class Config:
         # Discord configuration
         discord_config = self.config.get("discord", {})
         self.discord_token = discord_config.get("token")
-        
+
         # Server IDs - support both new and old format for backward compatibility
-        self.server_ids = discord_config.get("servers", []) or discord_config.get("server_ids", [])
-        
-        # Admin IDs - support both new and old format for backward compatibility
-        self.admin_ids = discord_config.get("admins", []) or self.config.get("admin_ids", [])
-        
-        # Trigger configuration - support both new and old format
-        self._trigger_emoji = (
-            discord_config.get("triggers", {}).get("emoji") or 
-            self.config.get("triggers", {}).get("emoji", "📢")
+        self.server_ids = discord_config.get("servers", []) or discord_config.get(
+            "server_ids", []
         )
-        
+
+        # Admin IDs - support both new and old format for backward compatibility
+        self.admin_ids = discord_config.get("admins", []) or self.config.get(
+            "admin_ids", []
+        )
+
+        # Trigger configuration - support both new and old format
+        self._trigger_emoji = discord_config.get("triggers", {}).get(
+            "emoji"
+        ) or self.config.get("triggers", {}).get("emoji", "📢")
+
         # Notification settings
         self._send_notifications = discord_config.get("send_notifications", False)
-        
+
         # Twitter configuration
         twitter_config = self.config.get("twitter", {})
         self.twitter_api_key = twitter_config.get("api_key")
@@ -197,13 +212,13 @@ class Config:
         self.twitter_access_token = twitter_config.get("access_token")
         self.twitter_access_secret = twitter_config.get("access_secret")
         self.twitter_bearer_token = twitter_config.get("bearer_token")
-        
+
         # New OAuth 2.0 credentials
         self.twitter_client_id = twitter_config.get("client_id")
         self.twitter_client_secret = twitter_config.get("client_secret")
         self.twitter_oauth2_refresh_token = twitter_config.get("oauth2_refresh_token")
         self.twitter_oauth2_access_token = twitter_config.get("oauth2_access_token")
-        
+
         # ... other configurations ...
 
     @property
@@ -236,7 +251,7 @@ class Config:
         channels = self.config.get("discord", {}).get("allowed_channels", [])
         if not channels:
             return []  # Empty list means all channels are allowed
-        
+
         # Convert string IDs to integers
         return [int(channel_id) for channel_id in channels]
 

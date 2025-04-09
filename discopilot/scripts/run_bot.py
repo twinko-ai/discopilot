@@ -1,7 +1,7 @@
+import argparse
 import asyncio
 import logging
 import sys
-import argparse
 
 from ..bot.discord_client import HedwigBot
 from ..publishers import get_publishers
@@ -19,7 +19,7 @@ def main():
         help="Set the logging level",
     )
     args = parser.parse_args()
-    
+
     # Set up logging
     log_level = getattr(logging, args.log_level)
     logging.basicConfig(
@@ -28,11 +28,13 @@ def main():
         handlers=[logging.StreamHandler()],
         force=True,
     )
-    
+
     # Set discord.py logger to DEBUG
     discord_logger = logging.getLogger("discord")
-    discord_logger.setLevel(logging.DEBUG if log_level == logging.DEBUG else logging.INFO)
-    
+    discord_logger.setLevel(
+        logging.DEBUG if log_level == logging.DEBUG else logging.INFO
+    )
+
     logger = logging.getLogger("discopilot")
     logger.info(f"Logging level set to {args.log_level}")
 
@@ -57,7 +59,7 @@ def main():
         trigger_emoji=config.trigger_emoji,
         send_notifications=config.send_notifications,
     )
-    
+
     # Add publishers after initialization
     for name, publisher in publishers.items():
         client.add_publisher(name, publisher)

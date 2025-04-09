@@ -42,7 +42,7 @@ class HedwigBot(discord.Client):
         logger.info(f"Trigger emoji repr: {repr(trigger_emoji)}")
         logger.info(f"Trigger emoji bytes: {trigger_emoji.encode('utf-8').hex()}")
         logger.info(f"Send notifications: {send_notifications}")
-        
+
         if server_ids:
             logger.info(f"Listening to server IDs: {', '.join(map(str, server_ids))}")
         else:
@@ -52,7 +52,7 @@ class HedwigBot(discord.Client):
             logger.info(f"Admin IDs: {', '.join(map(str, admin_ids))}")
         else:
             logger.warning("No admin IDs configured - anyone can trigger publishing")
-        
+
         if channel_ids:
             logger.info(f"Listening to channel IDs: {', '.join(map(str, channel_ids))}")
         else:
@@ -64,41 +64,51 @@ class HedwigBot(discord.Client):
         logger.info(f"Bot is in {len(self.guilds)} servers")
         for guild in self.guilds:
             logger.info(f"- {guild.name} (ID: {guild.id})")
-            
+
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         """Handle raw reaction add event."""
         logger.info(f"Raw reaction detected: {payload.emoji} by user {payload.user_id}")
-        
+
         # Check if the emoji matches our trigger
         if str(payload.emoji) != self.trigger_emoji:
-            logger.debug(f"Emoji {payload.emoji} doesn't match trigger {self.trigger_emoji}")
+            logger.debug(
+                f"Emoji {payload.emoji} doesn't match trigger {self.trigger_emoji}"
+            )
             return
-            
+
         # Check if user is an admin (if admin_ids is set)
         if self.admin_ids and payload.user_id not in self.admin_ids:
-            logger.warning(f"User {payload.user_id} tried to publish but is not an admin")
+            logger.warning(
+                f"User {payload.user_id} tried to publish but is not an admin"
+            )
             return
-            
+
         # Check if message is in a server we're listening to
         if self.server_ids and payload.guild_id not in self.server_ids:
-            logger.warning(f"Message is in server {payload.guild_id} which is not in the allowed list")
+            logger.warning(
+                f"Message is in server {payload.guild_id} which is not in the allowed list"
+            )
             return
-            
+
         # Check if message is in a channel we're listening to
         if self.channel_ids and payload.channel_id not in self.channel_ids:
-            logger.warning(f"Message is in channel {payload.channel_id} which is not in the allowed list")
+            logger.warning(
+                f"Message is in channel {payload.channel_id} which is not in the allowed list"
+            )
             return
-            
+
         # Get the channel and message
         channel = self.get_channel(payload.channel_id)
         if not channel:
             logger.error(f"Could not find channel {payload.channel_id}")
             return
-            
+
         try:
             message = await channel.fetch_message(payload.message_id)
-            logger.info(f"Found message: {message.id} with content: {message.content[:50]}...")
-            
+            logger.info(
+                f"Found message: {message.id} with content: {message.content[:50]}..."
+            )
+
             # Process the message
             await self.publish_message(message)
         except Exception as e:
@@ -107,9 +117,9 @@ class HedwigBot(discord.Client):
     async def publish_message(self, message):
         """Publish a message to all configured platforms."""
         logger.info(f"Publishing message {message.id} from {message.author}")
-        
+
         results = {}
-        
+
         for name, publisher in self.publishers.items():
             try:
                 logger.info(f"Publishing to {name}...")
@@ -119,7 +129,7 @@ class HedwigBot(discord.Client):
             except Exception as e:
                 logger.error(f"Error publishing to {name}: {e}", exc_info=True)
                 results[name] = {"status": f"Error: {str(e)}", "url": None}
-        
+
         # Format results message
         result_lines = ["Publishing results:"]
         for platform, result in results.items():
@@ -129,14 +139,14 @@ class HedwigBot(discord.Client):
             if url:
                 result_line += f" - {url}"
             result_lines.append(result_line)
-        
+
         result_message = "\n".join(result_lines)
         logger.info(result_message)
-        
+
         # Only send notification if enabled
         if self.send_notifications:
             await message.channel.send(result_message)
-        
+
         return results
 
     def add_publisher(self, name: str, publisher: BasePublisher):
