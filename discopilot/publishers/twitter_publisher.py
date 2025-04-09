@@ -84,14 +84,85 @@ class TwitterPublisher(BasePublisher):
                 logger.error(f"Error accessing message content: {e}", exc_info=True)
                 return f"Error accessing message content: {str(e)}", None
             
-            # Check content
-            if not content and not (hasattr(message, 'attachments') and message.attachments):
-                logger.error("Message has no content or attachments")
+            # Check for embeds if content is empty
+            has_embeds = hasattr(message, 'embeds') and message.embeds
+            logger.info(f"Message has embeds: {has_embeds}")
+            
+            if has_embeds and not content:
+                # Format embed content in the original style
+                embed = message.embeds[0]  # Use the first embed
+                
+                title = embed.title or ""
+                description = embed.description or ""
+                url = embed.url or ""
+                
+                logger.info(f"Embed title: {title}")
+                logger.info(f"Embed description: {description[:50]}..." if description else "No description")
+                logger.info(f"Embed URL: {url}")
+                
+                # Calculate available space for description
+                # Title line: title + ":"
+                # URL line: "Source: " + url
+                # 2 newlines
+                reserved_chars = len(title) + 1 + len("Source: ") + len(url) + 2
+                available_chars = 280 - reserved_chars
+                
+                logger.info(f"Reserved chars: {reserved_chars}, Available for description: {available_chars}")
+                
+                # Format the tweet with single line breaks
+                tweet_parts = []
+                
+                # Add title with colon
+                if title:
+                    tweet_parts.append(f"{title}:")
+                
+                # Add description with smart truncation
+                if description:
+                    if len(description) <= available_chars:
+                        # Use full description if it fits
+                        tweet_parts.append(description)
+                    else:
+                        # Try to find a good breakpoint
+                        # First try to find a sentence break
+                        sentences = description.split('. ')
+                        desc_part = ""
+                        for sentence in sentences:
+                            if len(desc_part + sentence + ". ") <= available_chars:
+                                if desc_part:
+                                    desc_part += ". " + sentence
+                                else:
+                                    desc_part = sentence
+                            else:
+                                break
+                        
+                        # If we have at least one sentence, use it
+                        if desc_part and len(desc_part) > 20:  # Ensure it's not too short
+                            if not desc_part.endswith('.'):
+                                desc_part += "."
+                            tweet_parts.append(desc_part)
+                        else:
+                            # Otherwise use as many characters as possible
+                            tweet_parts.append(description[:available_chars-3] + "...")
+                
+                # Add URL with "Source:" prefix
+                if url:
+                    tweet_parts.append(f"Source: {url}")
+                
+                # Combine parts into final content with single line breaks
+                content = "\n".join(tweet_parts)
+                logger.info(f"Formatted tweet content: {content[:100]}...")
+                logger.info(f"Tweet length: {len(content)} characters")
+            
+            # Check if we have content, embeds, or attachments
+            has_attachments = hasattr(message, 'attachments') and message.attachments
+            
+            if not content and not has_attachments:
+                logger.error("Message has no content, embeds, or attachments")
                 return "Error: Empty message", None
             
             # Download attachments if any
             media_ids = []
-            if message.attachments:
+            if has_attachments:
                 logger.debug(f"Message has {len(message.attachments)} attachments")
                 media_files = await download_attachments(message.attachments)
 
@@ -122,7 +193,7 @@ class TwitterPublisher(BasePublisher):
                             except Exception as e:
                                 logger.warning(f"Error deleting temp file: {e}")
 
-            # Truncate content if needed (Twitter limit is 280 chars)
+            # Final check to ensure we're under 280 characters
             if len(content) > 280:
                 logger.debug(f"Content too long ({len(content)} chars), truncating")
                 content = content[:277] + "..."

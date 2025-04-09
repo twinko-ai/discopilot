@@ -2,6 +2,7 @@ import logging
 from typing import Dict, List, Optional
 
 import discord
+from discord import RawReactionActionEvent
 
 from ..publishers.base_publisher import BasePublisher
 
@@ -24,6 +25,7 @@ class HedwigBot(discord.Client):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.reactions = True
+        intents.guilds = True
         super().__init__(intents=intents, *args, **kwargs)
 
         self.token = token
@@ -33,6 +35,9 @@ class HedwigBot(discord.Client):
         self.publishers: Dict[str, BasePublisher] = {}
 
         logger.info(f"Initialized Discord client with trigger emoji: {trigger_emoji}")
+        logger.info(f"Trigger emoji repr: {repr(trigger_emoji)}")
+        logger.info(f"Trigger emoji bytes: {trigger_emoji.encode('utf-8').hex()}")
+        
         if server_ids:
             logger.info(f"Listening to server IDs: {', '.join(map(str, server_ids))}")
         else:
@@ -46,54 +51,45 @@ class HedwigBot(discord.Client):
     async def on_ready(self):
         """Handle the bot being ready."""
         logger.info(f"Logged in as {self.user.name} ({self.user.id})")
-
-    async def on_reaction_add(self, reaction, user):
-        """Handle reaction added to a message."""
-        logger.debug(f"Reaction detected: {reaction.emoji} by user {user.name} ({user.id})")
+        logger.info(f"Bot is in {len(self.guilds)} servers")
+        for guild in self.guilds:
+            logger.info(f"- {guild.name} (ID: {guild.id})")
+            
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
+        """Handle raw reaction add event."""
+        # This is the key method that was missing!
+        logger.info(f"Raw reaction detected: {payload.emoji} by user {payload.user_id}")
+        print(f"RAW REACTION DETECTED: {payload.emoji} by user {payload.user_id}")
         
-        # Ignore bot's own reactions
-        if user.id == self.user.id:
-            logger.debug(f"Ignoring bot's own reaction")
+        # Check if the emoji matches our trigger
+        if str(payload.emoji) != self.trigger_emoji:
+            logger.debug(f"Emoji {payload.emoji} doesn't match trigger {self.trigger_emoji}")
             return
-
-        # Check if reaction is the trigger emoji
-        emoji = str(reaction.emoji)
-        logger.debug(f"Comparing reaction emoji '{emoji}' with trigger emoji '{self.trigger_emoji}'")
-        if emoji != self.trigger_emoji:
-            logger.debug(f"Emoji doesn't match trigger emoji, ignoring")
+            
+        # Check if user is an admin (if admin_ids is set)
+        if self.admin_ids and payload.user_id not in self.admin_ids:
+            logger.warning(f"User {payload.user_id} tried to publish but is not an admin")
             return
-
-        # Check if user is an admin (if admin list is configured)
-        logger.debug(f"Checking if user {user.id} is in admin list: {self.admin_ids}")
-        if self.admin_ids and user.id not in self.admin_ids:
-            logger.warning(
-                f"User {user.name} ({user.id}) tried to publish but is not an admin"
-            )
-            return
-
-        message = reaction.message
-        logger.debug(f"Message content: {message.content[:50]}...")
-        logger.info(
-            f"Reaction added by {user.name} ({user.id}) to message {message.id} "
-            f"with emoji {emoji}"
-        )
-
+            
         # Check if message is in a server we're listening to
-        server_id = message.guild.id if message.guild else None
-        logger.debug(f"Message server ID: {server_id}, Allowed server IDs: {self.server_ids}")
-        if (
-            self.server_ids
-            and message.guild
-            and message.guild.id not in self.server_ids
-        ):
-            logger.warning(
-                f"Message {message.id} is in server {message.guild.id} "
-                f"which is not in the allowed list"
-            )
+        if self.server_ids and payload.guild_id not in self.server_ids:
+            logger.warning(f"Message is in server {payload.guild_id} which is not in the allowed list")
             return
-
-        logger.debug(f"All checks passed, publishing message")
-        await self.publish_message(message)
+            
+        # Get the channel and message
+        channel = self.get_channel(payload.channel_id)
+        if not channel:
+            logger.error(f"Could not find channel {payload.channel_id}")
+            return
+            
+        try:
+            message = await channel.fetch_message(payload.message_id)
+            logger.info(f"Found message: {message.id} with content: {message.content[:50]}...")
+            
+            # Process the message
+            await self.publish_message(message)
+        except Exception as e:
+            logger.error(f"Error fetching or publishing message: {e}", exc_info=True)
 
     async def publish_message(self, message):
         """Publish a message to all configured platforms."""
